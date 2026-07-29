@@ -19,7 +19,7 @@ This repository provides an open-source R workflow and interactive Shiny applica
 
 ## Data Access
 
-The processed dataset (11,399 samples × 129 variables) is available on Zenodo:
+The processed dataset (11,399 samples × 127 variables) is available on Zenodo:
 
 **Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.21463376](https://doi.org/10.5281/zenodo.21463376)
 
@@ -147,7 +147,7 @@ neonPLFA/
 │   ├── neon_plfa_functions.R          # PLFA metric calculations
 │   └── run_neon_plfa_functions.R      # Example usage
 ├── data/
-│   └── neon_plfa_synthesis_v1.2.csv   # Processed dataset (129 variables)
+│   └── neon_plfa_synthesis_v1.2.csv   # Processed dataset (127 variables)
 ├── tables/                            # Release tables (incl. TableS2_data_dictionary.csv)
 ├── figures/                           # Release figures (Figure1–6)
 ├── docs/
@@ -171,7 +171,7 @@ neonPLFA/
 ## Documentation
 
 - **Shiny App User Guide**: See `docs/USER_GUIDE.md` for detailed instructions
-- **Data Dictionary**: `tables/TableS2_data_dictionary.csv` describes all 129 variables
+- **Data Dictionary**: `tables/TableS2_data_dictionary.csv` describes all 127 variables
 - **Manuscript**: Full methods and validation are described in the associated Scientific Data publication
 
 ## Citation
@@ -184,7 +184,7 @@ If you use this dataset or code, please cite:
 Hagen, C.J. & SanClements, M.D. (2026). Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. https://doi.org/10.5281/zenodo.21463376
 
 **Code:**  
-Hagen, C.J. & SanClements, M.D. (2026). neonPLFA: R workflow for processing NEON PLFA data (v1.0.0). *Zenodo*. https://doi.org/10.5281/zenodo.YYYYYYY
+Hagen, C.J. & SanClements, M.D. (2026). neonPLFA: R workflow for processing NEON PLFA data (v1.0.0). *Zenodo*. https://doi.org/10.5281/zenodo.21463376
 
 BibTeX:
 ```bibtex

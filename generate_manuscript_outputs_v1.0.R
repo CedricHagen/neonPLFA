@@ -7,11 +7,21 @@ suppressPackageStartupMessages({
   library(viridis)
   library(scales)
   library(gridExtra)
+  library(grid)
+  library(ragg)
   library(maps)
   library(broom)
 })
 
-setwd("~/Desktop/neonSoilHealth/manuscript_submission/")
+# Figures containing the Unicode omega (ω) in axis labels are rendered with the
+# ragg AGG device; the base R png() device fails on U+03C9 ("conversion failure
+# on 'ω'"). save_grob() writes any assembled grob to a PNG via ragg.
+save_grob <- function(path, grob, width, height) {
+  agg_png(path, width = width, height = height, units = "in", res = 300)
+  grid.newpage(); grid.draw(grob); dev.off()
+}
+
+setwd("/Users/hagen/Desktop/neonSoilHealth/projects/descriptor/manuscript")
 dir.create("manuscript_outputs", showWarnings = FALSE)
 dir.create("manuscript_outputs/tables", showWarnings = FALSE)
 dir.create("manuscript_outputs/figures", showWarnings = FALSE)
@@ -20,10 +30,34 @@ dir.create("manuscript_outputs/data", showWarnings = FALSE)
 cat("Output directories created.\n")
 
 cat("Loading dataset...\n")
-neon_plfa <- read.csv("neon_soil_health_2026-05-18.csv", stringsAsFactors = FALSE)
+neon_plfa <- read.csv("../../../archive/superseded_data/neon_soil_health_2026-05-18.csv", stringsAsFactors = FALSE)
 neon_plfa$collectDate <- as.Date(neon_plfa$collectDate)
 
 cat("Loaded", nrow(neon_plfa), "samples from", length(unique(neon_plfa$siteID)), "sites\n")
+
+cat("\n=== Enriching with pH, sample depth, and biomass condition (DP1.10086.001) ===\n")
+
+# Reuses the already-downloaded DP1.10086.001 cache from the mane project (same NEON
+# release, same 47 sites) rather than re-pulling from NEON. sls_soilpH and
+# sls_soilCoreCollection share the PLFA sampleID scheme (see match-rate check), unlike
+# sls_soilChemistry, which only overlaps ~16% of PLFA sampleIDs.
+soil_periodic_cache <- readRDS("../../mane/cache/soilperiodic_DP1_10086.rds")
+
+ph_add <- soil_periodic_cache$sls_soilpH %>%
+  select(sampleID, soilInWaterpH, soilInCaClpH) %>%
+  distinct(sampleID, .keep_all = TRUE)
+
+core_add <- soil_periodic_cache$sls_soilCoreCollection %>%
+  select(sampleID, sampleTopDepth, sampleBottomDepth, biomassSampleCondition) %>%
+  distinct(sampleID, .keep_all = TRUE)
+
+neon_plfa <- neon_plfa %>%
+  left_join(ph_add, by = "sampleID") %>%
+  left_join(core_add, by = "sampleID")
+
+cat("soilInWaterpH non-NA:", sum(!is.na(neon_plfa$soilInWaterpH)), "/", nrow(neon_plfa), "\n")
+cat("sampleTopDepth non-NA:", sum(!is.na(neon_plfa$sampleTopDepth)), "/", nrow(neon_plfa), "\n")
+cat("biomassSampleCondition non-NA:", sum(!is.na(neon_plfa$biomassSampleCondition)), "/", nrow(neon_plfa), "\n")
 
 cat("\n=== Calculating Gram-positive:Gram-negative ratio ===\n")
 
@@ -47,23 +81,68 @@ neon_plfa$GP_GN_ratio <- ifelse(neon_plfa$gram_negative > 0,
 
 cat("GP:GN ratio calculated for", sum(!is.na(neon_plfa$GP_GN_ratio)), "samples\n")
 
-cat("\n=== Generating clean dataset (without chemistry) ===\n")
+cat("\n=== Calculating cyclopropyl:precursor stress indices ===\n")
 
-chemistry_cols <- c(
-  "organicCPercent", "nitrogenPercent", "CN_ratio",
-  "organicd13C", "d15N", "biomass_per_gC_nmol_gC",
-  "plotID.chem", "collectDateTime.chem", "collectDate.chem",
-  "year.chem", "month.chem"
+# Physiological stress indices based on the accumulation of cyclopropyl fatty
+# acids relative to their monoenoic precursors (higher = greater stress).
+# NEON column mapping: cyclo19To0 = cy19:0; cyclo17To0 = cy17:0;
+# c18To1n11 = 18:1w7c (cis-vaccenic); c16To1n7 = 16:1w7c.
+# Primary index (cy19:0/18:1w7c) spans the full record; the cy17:0-based and
+# combined indices depend on cyclo17To0, which NEON reports from ~2021 onward,
+# so they are populated only where that precursor pair is measured.
+
+neon_plfa$stress_index_cy19 <- ifelse(
+  !is.na(neon_plfa$c18To1n11ScaledConcentration) &
+    neon_plfa$c18To1n11ScaledConcentration > 0,
+  neon_plfa$cyclo19To0ScaledConcentration / neon_plfa$c18To1n11ScaledConcentration,
+  NA)
+
+neon_plfa$stress_index_cy17 <- ifelse(
+  !is.na(neon_plfa$cyclo17To0ScaledConcentration) &
+    !is.na(neon_plfa$c16To1n7ScaledConcentration) &
+    neon_plfa$c16To1n7ScaledConcentration > 0,
+  neon_plfa$cyclo17To0ScaledConcentration / neon_plfa$c16To1n7ScaledConcentration,
+  NA)
+
+stress_num <- neon_plfa$cyclo17To0ScaledConcentration + neon_plfa$cyclo19To0ScaledConcentration
+stress_den <- neon_plfa$c16To1n7ScaledConcentration + neon_plfa$c18To1n11ScaledConcentration
+neon_plfa$stress_index_combined <- ifelse(
+  !is.na(neon_plfa$cyclo17To0ScaledConcentration) &
+    !is.na(neon_plfa$cyclo19To0ScaledConcentration) &
+    !is.na(stress_den) & stress_den > 0,
+  stress_num / stress_den,
+  NA)
+
+cat("Stress index (cy19:0/18:1w7c) calculated for",
+    sum(!is.na(neon_plfa$stress_index_cy19)), "samples;",
+    "cy17:0-based for", sum(!is.na(neon_plfa$stress_index_cy17)), "samples;",
+    "combined for", sum(!is.na(neon_plfa$stress_index_combined)), "samples\n")
+
+cat("\n=== Generating clean dataset ===\n")
+
+# Redundant join-artifact columns: byte-identical to their unsuffixed counterpart
+# because core/moisture/chemistry all carry their own copies of sampleID's parent
+# fields (sampleID, horizon, plotID, collectDate, year, month).
+duplicate_join_cols <- c(
+  "horizon.core", "plotID.core", "collectDateTime.core", "collectDate.core", "year.core", "month.core",
+  "horizon.moist", "plotID.moist", "collectDateTime.moist", "collectDate.moist", "year.moist", "month.moist",
+  "plotID.chem", "collectDateTime.chem", "collectDate.chem", "year.chem", "month.chem"
 )
 
+# total_microbial_biomass is a literal copy of microbial_biomass_nmol_g (see
+# compute_soil_health_metrics() in R/neon_plfa.R); only the latter is published.
+# The superseded legacy single-column "stress_index" is dropped in favor of the
+# three newly derived stress indices (stress_index_cy19 / cy17 / combined).
+drop_cols <- c(duplicate_join_cols, "total_microbial_biomass", "stress_index")
+
 neon_plfa_clean <- neon_plfa %>%
-  select(-any_of(chemistry_cols))
+  select(-any_of(drop_cols))
 
 write.csv(neon_plfa_clean,
-          "manuscript_outputs/data/neon_plfa_synthesis_v1.0.csv",
+          "manuscript_outputs/data/neon_plfa_synthesis_v1.2.csv",
           row.names = FALSE)
 
-cat("✓ Saved: neon_plfa_synthesis_v1.0.csv\n")
+cat("✓ Saved: neon_plfa_synthesis_v1.2.csv\n")
 
 cat("\n=== Generating supplementary tables ===\n")
 
@@ -110,8 +189,12 @@ summary_stats <- bind_rows(
     mutate(metric = "Bacterial PLFA (nmol/g)", .before = 1),
   calc_summary(neon_plfa_clean$FB_ratio) %>%
     mutate(metric = "F:B ratio", .before = 1),
-  calc_summary(neon_plfa_clean$stress_index) %>%
-    mutate(metric = "Stress index", .before = 1),
+  calc_summary(neon_plfa_clean$stress_index_cy19) %>%
+    mutate(metric = "Cyclopropyl:precursor stress index [cy19:0/18:1ω7c]", .before = 1),
+  calc_summary(neon_plfa_clean$stress_index_cy17) %>%
+    mutate(metric = "Cyclopropyl:precursor stress index [cy17:0/16:1ω7c; 2021+]", .before = 1),
+  calc_summary(neon_plfa_clean$stress_index_combined) %>%
+    mutate(metric = "Cyclopropyl:precursor stress index [combined; 2021+]", .before = 1),
   calc_summary(neon_plfa_clean$GP_GN_ratio) %>%
     mutate(metric = "GP:GN ratio", .before = 1)
 )
@@ -132,7 +215,7 @@ completeness_by_site <- neon_plfa_clean %>%
     pct_fungal = round(100 * sum(!is.na(fungal_plfa_nmol_g)) / n(), 1),
     pct_bacterial = round(100 * sum(!is.na(bacterial_plfa_nmol_g)) / n(), 1),
     pct_FB = round(100 * sum(!is.na(FB_ratio)) / n(), 1),
-    pct_stress = round(100 * sum(!is.na(stress_index)) / n(), 1),
+    pct_stress = round(100 * sum(!is.na(stress_index_cy19)) / n(), 1),
     pct_GPGN = round(100 * sum(!is.na(GP_GN_ratio)) / n(), 1),
     .groups = "drop"
   )
@@ -148,8 +231,8 @@ horizon_summary <- neon_plfa_clean %>%
     sd_biomass = round(sd(microbial_biomass_nmol_g, na.rm = TRUE), 2),
     mean_FB = round(mean(FB_ratio, na.rm = TRUE), 3),
     sd_FB = round(sd(FB_ratio, na.rm = TRUE), 3),
-    mean_stress = round(mean(stress_index, na.rm = TRUE), 2),
-    sd_stress = round(sd(stress_index, na.rm = TRUE), 2),
+    mean_stress = round(mean(stress_index_cy19, na.rm = TRUE), 2),
+    sd_stress = round(sd(stress_index_cy19, na.rm = TRUE), 2),
     mean_GPGN = round(mean(GP_GN_ratio, na.rm = TRUE), 2),
     sd_GPGN = round(sd(GP_GN_ratio, na.rm = TRUE), 2),
     .groups = "drop"
@@ -165,8 +248,8 @@ domain_summary <- neon_plfa_clean %>%
     sd_biomass = round(sd(microbial_biomass_nmol_g, na.rm = TRUE), 2),
     mean_FB = round(mean(FB_ratio, na.rm = TRUE), 3),
     sd_FB = round(sd(FB_ratio, na.rm = TRUE), 3),
-    mean_stress = round(mean(stress_index, na.rm = TRUE), 2),
-    sd_stress = round(sd(stress_index, na.rm = TRUE), 2),
+    mean_stress = round(mean(stress_index_cy19, na.rm = TRUE), 2),
+    sd_stress = round(sd(stress_index_cy19, na.rm = TRUE), 2),
     mean_GPGN = round(mean(GP_GN_ratio, na.rm = TRUE), 2),
     sd_GPGN = round(sd(GP_GN_ratio, na.rm = TRUE), 2),
     .groups = "drop"
@@ -250,34 +333,39 @@ cat("✓ Figure 1c saved\n")
 
 cat("Generating Figure 2: Metric Distributions...\n")
 
+# Shared styling for the cyclopropyl:precursor stress index (primary, cy19:0/18:1ω7c)
+ST_COLOR <- "darkorange3"
+ST_FILL  <- "navajowhite"
+STRESS_LAB_FULL  <- "Cyclopropyl:precursor stress ratio (cy19:0/18:1ω7c)"
+STRESS_LAB_MEAN  <- "Mean stress ratio (cy19:0/18:1ω7c)"
+STRESS_LAB_SHORT <- "Stress ratio (cy19:0/18:1ω7c)"
+bold_title <- theme(plot.title = element_text(face = "bold", size = 14, hjust = 0))
+
 fig2a <- ggplot(neon_plfa_clean, aes(x = log10(microbial_biomass_nmol_g))) +
   geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) +
   labs(x = "log10(Biomass) [nmol/g]", y = "Count") +
-  theme_minimal()
+  ggtitle("a") + theme_minimal() + bold_title
 
-fig2b <- ggplot(neon_plfa_clean, aes(x = FB_ratio)) +
+fig2b <- ggplot(neon_plfa_clean, aes(x = log10(FB_ratio + 0.001))) +
   geom_histogram(bins = 50, fill = "darkgreen", alpha = 0.7) +
-  labs(x = "Fungal:Bacterial Ratio", y = "Count") +
-  theme_minimal()
+  labs(x = "log10(Fungal:Bacterial Ratio + 0.001)", y = "Count") +
+  ggtitle("b") + theme_minimal() + bold_title
 
-fig2c <- ggplot(neon_plfa_clean %>% filter(stress_index < 5),
-                aes(x = stress_index)) +
-  geom_histogram(bins = 50, fill = "coral", alpha = 0.7) +
-  labs(x = "Stress Index", y = "Count") +
-  theme_minimal()
+# Stress index truncated at 5 for display (long right tail; see Table 2 for full range)
+fig2c <- ggplot(neon_plfa_clean %>% filter(!is.na(stress_index_cy19) & stress_index_cy19 < 5),
+                aes(x = stress_index_cy19)) +
+  geom_histogram(bins = 50, fill = ST_COLOR, alpha = 0.7) +
+  labs(x = STRESS_LAB_FULL, y = "Count") +
+  ggtitle("c") + theme_minimal() + bold_title
 
 fig2d <- ggplot(neon_plfa_clean %>% filter(!is.na(GP_GN_ratio) & GP_GN_ratio < 10),
-                aes(x = GP_GN_ratio)) +
+                aes(x = log10(GP_GN_ratio))) +
   geom_histogram(bins = 50, fill = "purple", alpha = 0.7) +
-  labs(x = "Gram+:Gram- Ratio", y = "Count") +
-  theme_minimal()
+  labs(x = "log10(Gram+:Gram- Ratio)", y = "Count") +
+  ggtitle("d") + theme_minimal() + bold_title
 
-fig2_combined <- grid.arrange(fig2a, fig2b, fig2c, fig2d, ncol = 2, nrow = 2)
-
-ggsave("manuscript_outputs/figures/Figure2_distributions.png", fig2_combined,
-       width = 8, height = 10, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure2_distributions.pdf", fig2_combined,
-       width = 8, height = 10)
+save_grob("manuscript_outputs/figures/Figure2_distributions.png",
+          arrangeGrob(fig2a, fig2b, fig2c, fig2d, ncol = 1), 8, 13)
 
 cat("✓ Figure 2 saved\n")
 
@@ -289,10 +377,11 @@ site_averages <- neon_plfa_clean %>%
     latitude = first(decimalLatitude),
     mean_biomass = mean(microbial_biomass_nmol_g, na.rm = TRUE),
     mean_FB = mean(FB_ratio, na.rm = TRUE),
-    mean_stress = mean(stress_index, na.rm = TRUE),
+    mean_stress = mean(stress_index_cy19, na.rm = TRUE),
     n_samples = n(),
     .groups = "drop"
-  )
+  ) %>%
+  mutate(log_mean_biomass = log10(mean_biomass))
 
 add_lm_stats <- function(data, x_col, y_col) {
   df <- data.frame(x = data[[x_col]], y = data[[y_col]]) %>%
@@ -316,17 +405,22 @@ add_lm_stats <- function(data, x_col, y_col) {
   )
 }
 
-stats_biomass <- add_lm_stats(site_averages, "latitude", "mean_biomass")
+# Fit on log10(mean_biomass) so the reported R²/p-value match the log10-transformed
+# axis plotted below and the "log10(Biomass)" label in Table S1 (previously the lm()
+# was fit on raw mean_biomass while the figure/label implied a log10 fit).
+stats_biomass <- add_lm_stats(site_averages, "latitude", "log_mean_biomass")
 
-fig3a <- ggplot(site_averages, aes(x = latitude, y = log10(mean_biomass))) +
+fig3a <- ggplot(site_averages, aes(x = latitude, y = log_mean_biomass)) +
   geom_point(size = 3, alpha = 0.7, color = "steelblue") +
   geom_smooth(method = "lm", se = TRUE, color = "darkblue", fill = "lightblue") +
   annotate("text", x = 20, y = 2.9,
            label = stats_biomass$label, hjust = 0, vjust = 1, size = 3.5,
            fontface = "bold") +
   labs(x = "Latitude (°N)", y = "log10(Mean Biomass) [nmol/g]") +
+  ggtitle("a") +
   theme_minimal() +
-  theme(plot.margin = margin(10, 10, 10, 10))
+  theme(plot.margin = margin(10, 10, 10, 10),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
 stats_FB <- add_lm_stats(site_averages, "latitude", "mean_FB")
 
@@ -337,30 +431,30 @@ fig3b <- ggplot(site_averages, aes(x = latitude, y = mean_FB)) +
            label = stats_FB$label, hjust = 0, vjust = 1, size = 3.5,
            fontface = "bold") +
   labs(x = "Latitude (°N)", y = "Mean F:B Ratio") +
+  ggtitle("b") +
   theme_minimal() +
-  theme(plot.margin = margin(10, 10, 10, 10))
+  theme(plot.margin = margin(10, 10, 10, 10),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
 stats_stress <- add_lm_stats(site_averages, "latitude", "mean_stress")
 
 fig3c <- ggplot(site_averages, aes(x = latitude, y = mean_stress)) +
-  geom_point(size = 3, alpha = 0.7, color = "coral") +
-  geom_smooth(method = "lm", se = TRUE, color = "red4", fill = "pink") +
-  annotate("text", x = 20, y = 2.6,
+  geom_point(size = 3, alpha = 0.7, color = ST_COLOR) +
+  geom_smooth(method = "lm", se = TRUE, color = ST_COLOR, fill = ST_FILL) +
+  annotate("text", x = 45, y = max(site_averages$mean_stress, na.rm = TRUE) * 0.98,
            label = stats_stress$label, hjust = 0, vjust = 1, size = 3.5,
            fontface = "bold") +
-  labs(x = "Latitude (°N)", y = "Mean Stress Index") +
+  labs(x = "Latitude (°N)", y = STRESS_LAB_MEAN) +
+  ggtitle("c") +
   theme_minimal() +
-  theme(plot.margin = margin(10, 10, 10, 10))
+  theme(plot.margin = margin(10, 10, 10, 10),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
-fig3_combined <- grid.arrange(fig3a, fig3b, fig3c, ncol = 1)
-
-ggsave("manuscript_outputs/figures/Figure3_latitudinal_gradients.png", fig3_combined,
-       width = 8, height = 11, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure3_latitudinal_gradients.pdf", fig3_combined,
-       width = 8, height = 11)
+save_grob("manuscript_outputs/figures/Figure3_latitudinal_gradients.png",
+          arrangeGrob(fig3a, fig3b, fig3c, ncol = 1), 8, 14)
 
 lat_stats <- data.frame(
-  metric = c("log10(Biomass)", "F:B Ratio", "Stress Index"),
+  metric = c("log10(Biomass)", "F:B Ratio", "Cyclopropyl:precursor stress index"),
   n_sites = c(stats_biomass$n, stats_FB$n, stats_stress$n),
   r_squared = c(stats_biomass$r2, stats_FB$r2, stats_stress$r2),
   p_value = c(stats_biomass$pval, stats_FB$pval, stats_stress$pval)
@@ -375,28 +469,31 @@ cat("Generating Figure 4: Domain patterns...\n")
 fig4a <- ggplot(neon_plfa_clean, aes(x = domainID, y = log10(microbial_biomass_nmol_g))) +
   geom_boxplot(fill = "steelblue", alpha = 0.6, outlier.size = 0.5) +
   labs(x = "NEON Domain", y = "log10(Biomass) [nmol/g]") +
+  ggtitle("a") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
 fig4b <- ggplot(neon_plfa_clean, aes(x = domainID, y = FB_ratio)) +
   geom_boxplot(fill = "darkgreen", alpha = 0.6, outlier.size = 0.5) +
   labs(x = "NEON Domain", y = "F:B Ratio") +
+  ggtitle("b") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
-fig4c <- ggplot(neon_plfa_clean %>% filter(stress_index < 5),
-                aes(x = domainID, y = stress_index)) +
-  geom_boxplot(fill = "coral", alpha = 0.6, outlier.size = 0.5) +
-  labs(x = "NEON Domain", y = "Stress Index") +
+fig4c <- ggplot(neon_plfa_clean %>% filter(!is.na(stress_index_cy19)),
+                aes(x = domainID, y = stress_index_cy19)) +
+  geom_boxplot(fill = ST_COLOR, alpha = 0.6, outlier.size = 0.5) +
+  coord_cartesian(ylim = c(0, quantile(neon_plfa_clean$stress_index_cy19, 0.99, na.rm = TRUE))) +
+  labs(x = "NEON Domain", y = STRESS_LAB_SHORT) +
+  ggtitle("c") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
-fig4_combined <- grid.arrange(fig4a, fig4b, fig4c, ncol = 1)
-
-ggsave("manuscript_outputs/figures/Figure4_domain_patterns.png", fig4_combined,
-       width = 10, height = 12, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure4_domain_patterns.pdf", fig4_combined,
-       width = 10, height = 12)
+save_grob("manuscript_outputs/figures/Figure4_domain_patterns.png",
+          arrangeGrob(fig4a, fig4b, fig4c, ncol = 1), 10, 15)
 
 cat("✓ Figure 4 saved\n")
 
@@ -410,7 +507,7 @@ plfa_completeness <- data.frame(
     100 * sum(!is.na(neon_plfa_clean$fungal_plfa_nmol_g)) / nrow(neon_plfa_clean),
     100 * sum(!is.na(neon_plfa_clean$bacterial_plfa_nmol_g)) / nrow(neon_plfa_clean),
     100 * sum(!is.na(neon_plfa_clean$FB_ratio)) / nrow(neon_plfa_clean),
-    100 * sum(!is.na(neon_plfa_clean$stress_index)) / nrow(neon_plfa_clean),
+    100 * sum(!is.na(neon_plfa_clean$stress_index_cy19)) / nrow(neon_plfa_clean),
     100 * sum(!is.na(neon_plfa_clean$GP_GN_ratio)) / nrow(neon_plfa_clean)
   )
 )
@@ -418,24 +515,23 @@ plfa_completeness <- data.frame(
 fig5a <- ggplot(plfa_completeness, aes(x = reorder(metric, pct_complete), y = pct_complete)) +
   geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8) +
   geom_text(aes(label = paste0(round(pct_complete, 1), "%")),
-            hjust = -0.1, size = 4) +
+            hjust = -0.1, size = 3.8) +
   coord_flip() +
   ylim(0, 105) +
   labs(x = "", y = "% Complete") +
-  theme_minimal() +
-  theme(panel.grid.major.y = element_blank())
-
-ggsave("manuscript_outputs/figures/Figure5a_completeness.png", fig5a,
-       width = 8, height = 5, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure5a_completeness.pdf", fig5a,
-       width = 8, height = 5)
+  theme_minimal(base_size = 14) +
+  theme(axis.title = element_text(size = 13, face = "bold"),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 11),
+        panel.grid.major.y = element_blank(),
+        plot.margin = margin(10, 20, 10, 10))
 
 site_year_means <- neon_plfa_clean %>%
   group_by(siteID, year) %>%
   summarize(
     mean_biomass = mean(microbial_biomass_nmol_g, na.rm = TRUE),
     mean_FB = mean(FB_ratio, na.rm = TRUE),
-    mean_stress = mean(stress_index, na.rm = TRUE),
+    mean_stress = mean(stress_index_cy19, na.rm = TRUE),
     mean_GPGN = mean(GP_GN_ratio, na.rm = TRUE),
     n_samples = n(),
     .groups = "drop"
@@ -458,24 +554,24 @@ write.csv(temporal_stability,
           row.names = FALSE)
 
 cv_summary <- data.frame(
-  metric = c("Biomass", "F:B Ratio", "Stress Index", "GP:GN Ratio"),
+  metric = c("Biomass", "F:B Ratio", "GP:GN Ratio", "Cyclopropyl:precursor stress index"),
   n_sites = c(
     sum(!is.na(temporal_stability$cv_biomass)),
     sum(!is.na(temporal_stability$cv_FB)),
-    sum(!is.na(temporal_stability$cv_stress)),
-    sum(!is.na(temporal_stability$cv_GPGN))
+    sum(!is.na(temporal_stability$cv_GPGN)),
+    sum(!is.na(temporal_stability$cv_stress))
   ),
   median_cv = c(
     round(median(temporal_stability$cv_biomass, na.rm = TRUE), 1),
     round(median(temporal_stability$cv_FB, na.rm = TRUE), 1),
-    round(median(temporal_stability$cv_stress, na.rm = TRUE), 1),
-    round(median(temporal_stability$cv_GPGN, na.rm = TRUE), 1)
+    round(median(temporal_stability$cv_GPGN, na.rm = TRUE), 1),
+    round(median(temporal_stability$cv_stress, na.rm = TRUE), 1)
   ),
   mean_cv = c(
     round(mean(temporal_stability$cv_biomass, na.rm = TRUE), 1),
     round(mean(temporal_stability$cv_FB, na.rm = TRUE), 1),
-    round(mean(temporal_stability$cv_stress, na.rm = TRUE), 1),
-    round(mean(temporal_stability$cv_GPGN, na.rm = TRUE), 1)
+    round(mean(temporal_stability$cv_GPGN, na.rm = TRUE), 1),
+    round(mean(temporal_stability$cv_stress, na.rm = TRUE), 1)
   )
 )
 
@@ -485,7 +581,7 @@ write.csv(cv_summary,
 
 cat("Temporal stability: n =", nrow(temporal_stability), "sites with ≥3 years\n")
 cat("Median CVs: Biomass =", cv_summary$median_cv[1], "%, F:B =", cv_summary$median_cv[2],
-    "%, Stress =", cv_summary$median_cv[3], "%, GP:GN =", cv_summary$median_cv[4], "%\n")
+    "%, GP:GN =", cv_summary$median_cv[3], "%, Stress =", cv_summary$median_cv[4], "%\n")
 
 calc_icc <- function(data, value_col) {
   model_data <- data %>%
@@ -513,12 +609,12 @@ calc_icc <- function(data, value_col) {
 
 icc_biomass <- calc_icc(site_year_means, "mean_biomass")
 icc_FB <- calc_icc(site_year_means, "mean_FB")
-icc_stress <- calc_icc(site_year_means, "mean_stress")
 icc_GPGN <- calc_icc(site_year_means, "mean_GPGN")
+icc_stress <- calc_icc(site_year_means, "mean_stress")
 
 icc_results <- data.frame(
-  metric = c("Biomass", "F:B Ratio", "Stress Index", "GP:GN Ratio"),
-  ICC = round(c(icc_biomass, icc_FB, icc_stress, icc_GPGN), 3)
+  metric = c("Biomass", "F:B Ratio", "GP:GN Ratio", "Cyclopropyl:precursor stress index"),
+  ICC = round(c(icc_biomass, icc_FB, icc_GPGN, icc_stress), 3)
 )
 
 write.csv(icc_results,
@@ -526,7 +622,7 @@ write.csv(icc_results,
           row.names = FALSE)
 
 cat("ICCs: Biomass =", round(icc_biomass, 3), ", F:B =", round(icc_FB, 3),
-    ", Stress =", round(icc_stress, 3), ", GP:GN =", round(icc_GPGN, 3), "\n")
+    ", GP:GN =", round(icc_GPGN, 3), ", Stress =", round(icc_stress, 3), "\n")
 
 cv_long <- temporal_stability %>%
   select(siteID, n_years, cv_biomass, cv_FB, cv_stress, cv_GPGN) %>%
@@ -537,21 +633,28 @@ cv_long <- temporal_stability %>%
                          "cv_biomass" = "Biomass",
                          "cv_FB" = "F:B Ratio",
                          "cv_stress" = "Stress Index",
-                         "cv_GPGN" = "GP:GN Ratio"))
+                         "cv_GPGN" = "GP:GN Ratio"),
+         metric = factor(metric, levels = c("Biomass", "F:B Ratio", "Stress Index", "GP:GN Ratio")))
 
 fig5b <- ggplot(cv_long, aes(x = metric, y = cv)) +
   geom_boxplot(fill = "lightblue", alpha = 0.7, outlier.alpha = 0.3) +
-  geom_jitter(width = 0.2, alpha = 0.3, size = 1) +
+  geom_jitter(width = 0.2, alpha = 0.3, size = 1.5) +
   geom_hline(yintercept = c(20, 30, 40), linetype = "dashed",
              color = "gray60", linewidth = 0.3) +
   labs(x = "", y = "Coefficient of Variation (%)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme_minimal(base_size = 14) +
+  theme(axis.title = element_text(size = 13, face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+        axis.text.y = element_text(size = 11),
+        plot.margin = margin(10, 10, 10, 20))
 
-ggsave("manuscript_outputs/figures/Figure5b_temporal_stability.png", fig5b,
-       width = 8, height = 5, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure5b_temporal_stability.pdf", fig5b,
-       width = 8, height = 5)
+# Combine completeness (a) and temporal stability (b) into a single two-panel figure
+fig5a_lab <- arrangeGrob(fig5a, top = textGrob("a", x = 0.02, hjust = 0,
+                                               gp = gpar(fontface = "bold", fontsize = 16)))
+fig5b_lab <- arrangeGrob(fig5b, top = textGrob("b", x = 0.02, hjust = 0,
+                                               gp = gpar(fontface = "bold", fontsize = 16)))
+save_grob("manuscript_outputs/figures/Figure5_combined.png",
+          arrangeGrob(fig5a_lab, fig5b_lab, ncol = 2, widths = c(1, 1)), 14, 6)
 
 cat("✓ Figure 5 saved\n")
 
@@ -592,7 +695,9 @@ fig6a <- ggplot(data_6a, aes(x = log_biomass, y = FB_ratio)) +
            label = stats_6a$label, hjust = 0, vjust = 1, size = 3.5,
            fontface = "bold") +
   labs(x = "log10(Biomass) [nmol/g]", y = "F:B Ratio") +
-  theme_minimal()
+  ggtitle("a") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
 data_6b <- neon_plfa_clean %>%
   mutate(log_bacterial = log10(bacterial_plfa_nmol_g),
@@ -610,31 +715,35 @@ fig6b <- ggplot(data_6b, aes(x = log_bacterial, y = log_fungal)) +
            fontface = "bold") +
   labs(x = "log10(Bacterial PLFA) [nmol/g]",
        y = "log10(Fungal PLFA + 0.1) [nmol/g]") +
-  theme_minimal()
+  ggtitle("b") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
-data_6c <- neon_plfa_clean %>%
-  filter(!is.na(stress_index) & !is.na(FB_ratio) & stress_index < 5)
+# Panel (c): stress index vs F:B ratio. Statistics use all paired observations;
+# display truncates the stress axis at the 99th percentile for readability.
+data_6c_full <- neon_plfa_clean %>%
+  filter(is.finite(stress_index_cy19) & !is.na(FB_ratio))
+stats_6c <- get_stats_label(data_6c_full, "FB_ratio", "stress_index_cy19")
+data_6c <- data_6c_full %>%
+  filter(stress_index_cy19 < quantile(stress_index_cy19, 0.99, na.rm = TRUE))
 
-stats_6c <- get_stats_label(data_6c, "FB_ratio", "stress_index")
-
-fig6c <- ggplot(data_6c, aes(x = FB_ratio, y = stress_index)) +
-  geom_point(alpha = 0.2, size = 0.8, color = "coral") +
-  geom_smooth(method = "lm", color = "red4", se = TRUE, fill = "pink") +
-  annotate("text", x = 0.05, y = 4.7,
+fig6c <- ggplot(data_6c, aes(x = FB_ratio, y = stress_index_cy19)) +
+  geom_point(alpha = 0.2, size = 0.8, color = ST_COLOR) +
+  geom_smooth(method = "lm", color = ST_COLOR, se = TRUE, fill = ST_FILL) +
+  annotate("text", x = max(data_6c$FB_ratio, na.rm = TRUE) * 0.6,
+           y = max(data_6c$stress_index_cy19, na.rm = TRUE) * 0.95,
            label = stats_6c$label, hjust = 0, vjust = 1, size = 3.5,
            fontface = "bold") +
-  labs(x = "F:B Ratio", y = "Stress Index") +
-  theme_minimal()
+  labs(x = "F:B Ratio", y = STRESS_LAB_SHORT) +
+  ggtitle("c") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0))
 
-fig6_combined <- grid.arrange(fig6a, fig6b, fig6c, ncol = 1)
-
-ggsave("manuscript_outputs/figures/Figure6_plfa_relationships.png", fig6_combined,
-       width = 8, height = 11, dpi = 300)
-ggsave("manuscript_outputs/figures/Figure6_plfa_relationships.pdf", fig6_combined,
-       width = 8, height = 11)
+save_grob("manuscript_outputs/figures/Figure6_plfa_relationships.png",
+          arrangeGrob(fig6a, fig6b, fig6c, ncol = 1), 8, 14)
 
 fig6_stats <- data.frame(
-  panel = c("(a) F:B vs Biomass", "(b) Fungal vs Bacterial", "(c) Stress vs F:B"),
+  panel = c("(a) F:B vs Biomass", "(b) Fungal vs Bacterial", "(c) Stress index vs F:B"),
   n_samples = c(stats_6a$n, stats_6b$n, stats_6c$n),
   r_squared = c(stats_6a$r2, stats_6b$r2, stats_6c$r2),
   p_value = c(stats_6a$pval, stats_6b$pval, stats_6c$pval)

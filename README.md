@@ -21,7 +21,7 @@ This repository provides an open-source R workflow and interactive Shiny applica
 
 The processed dataset (11,399 samples × 129 variables) is available on Zenodo:
 
-**Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.20299460](https://doi.org/10.5281/zenodo.20299460)
+**Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.20299460](https://doi.org/10.5281/zenodo.21463376)
 
 ## Installation
 
@@ -201,7 +201,7 @@ BibTeX:
   title = {Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024)},
   year = {2026},
   publisher = {Zenodo},
-  doi = {10.5281/zenodo.20299460}
+  doi = {10.5281/zenodo.21463376}
 }
 ```
 

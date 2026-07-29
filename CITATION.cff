@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software or data, please cite both the paper and the dataset as below."
 type: software
-title: "neonSoilHealth: R workflow for processing NEON PLFA data"
+title: "neonPLFA: R workflow for processing NEON PLFA data"
 version: 1.0.0
 date-released: "2026-06-01"
 authors:
@@ -13,8 +13,8 @@ authors:
     given-names: "Michael D."
     orcid: "https://orcid.org/0000-0002-1962-3561"
     affiliation: "Institute of Arctic and Alpine Research, University of Colorado Boulder"
-repository-code: "https://github.com/CedricHagen/neonSoilHealth"
-url: "https://github.com/CedricHagen/neonSoilHealth"
+repository-code: "https://github.com/CedricHagen/neonPLFA"
+url: "https://github.com/CedricHagen/neonPLFA"
 abstract: "An open-source R workflow and interactive Shiny application for accessing, processing, and analyzing soil microbial community data from the National Ecological Observatory Network (NEON). Processes phospholipid fatty acid (PLFA) measurements from 11,399 soil samples collected across 47 NEON sites between 2017 and 2024."
 keywords:
   - NEON

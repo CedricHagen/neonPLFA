@@ -1,0 +1,99 @@
+{
+  "upload_type": "dataset",
+  "publication_date": "2026-06-01",
+  "title": "Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024)",
+  "creators": [
+    {
+      "name": "Hagen, Cedric J.",
+      "affiliation": "Department of Geological Sciences, University of Colorado Boulder; National Ecological Observatory Network, Battelle Memorial Institute",
+      "orcid": "0000-0001-6722-3098"
+    },
+    {
+      "name": "SanClements, Michael D.",
+      "affiliation": "Institute of Arctic and Alpine Research, University of Colorado Boulder; National Ecological Observatory Network, Battelle Memorial Institute",
+      "orcid": "0000-0002-1962-3561"
+    }
+  ],
+  "description": "<p>This dataset provides a continental-scale synthesis of phospholipid fatty acid (PLFA) data from the National Ecological Observatory Network (NEON), encompassing 11,399 samples collected from 47 terrestrial sites across North America between 2017 and 2024.</p><p><strong>Contents:</strong></p><ul><li>neon_plfa_synthesis_v1.1.csv - Processed PLFA dataset (11,399 samples × 129 variables)</li><li>data_dictionary.csv - Complete variable descriptions and metadata</li></ul><p><strong>Data coverage:</strong></p><ul><li>47 NEON sites spanning 20 ecological domains (D01-D20)</li><li>Geographic range: 18.1°N to 68.6°N (Puerto Rico to Alaska)</li><li>Temporal coverage: March 2017 - November 2024 (7.7 years)</li><li>Biomes: tropical forests, temperate forests, grasslands, shrublands, taiga, and tundra</li></ul><p><strong>Derived microbial metrics:</strong></p><ul><li>Total microbial biomass (nmol/g dry soil)</li><li>Fungal and bacterial PLFA biomass</li><li>Fungal:bacterial ratios</li><li>Cyclopropyl:precursor stress indices</li><li>Gram-positive:Gram-negative ratios</li></ul><p><strong>Quality control:</strong> All data have undergone standardized QC procedures including contamination correction (C18:0), removal of samples with analytical issues, and validation against expected biogeographic patterns.</p><p><strong>Data usage:</strong> This dataset enables investigations of soil microbial biogeography, climate-microbe interactions, disturbance ecology, and microbial regulation of ecosystem carbon cycling across unprecedented spatial and temporal scales.</p><p>See the associated code repository and manuscript for complete methods, technical validation, and usage notes.</p>",
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "keywords": [
+    "soil microbial communities",
+    "phospholipid fatty acids",
+    "PLFA",
+    "NEON",
+    "National Ecological Observatory Network",
+    "microbial biogeography",
+    "soil health",
+    "fungal:bacterial ratio",
+    "microbial biomass",
+    "North America",
+    "continental-scale",
+    "time series",
+    "soil ecology"
+  ],
+  "subjects": [
+    {
+      "term": "Soil microbiology",
+      "identifier": "http://id.loc.gov/authorities/subjects/sh85124400"
+    },
+    {
+      "term": "Biogeography",
+      "identifier": "http://id.loc.gov/authorities/subjects/sh85014152"
+    }
+  ],
+  "notes": "This dataset was generated using the neonPLFA R workflow (https://github.com/CedricHagen/neonPLFA). Data were obtained from NEON data products DP1.10104.001 (Soil microbe biomass) and DP1.10086.001 (Soil physical and chemical properties, periodic). Quality control procedures followed NEON protocols with additional contamination correction and standardized metric calculation.",
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "10.XXXX/journal.XXXXX",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "relation": "isCompiledBy",
+      "identifier": "https://github.com/CedricHagen/neonPLFA",
+      "resource_type": "software",
+      "scheme": "url"
+    },
+    {
+      "relation": "isCompiledBy",
+      "identifier": "10.5281/zenodo.YYYYYYY",
+      "resource_type": "software",
+      "scheme": "doi"
+    },
+    {
+      "relation": "isDerivedFrom",
+      "identifier": "https://data.neonscience.org/data-products/DP1.10104.001",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
+      "relation": "isDerivedFrom",
+      "identifier": "https://data.neonscience.org/data-products/DP1.10086.001",
+      "resource_type": "dataset",
+      "scheme": "url"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "National Ecological Observatory Network (NEON)",
+      "type": "DataCollector"
+    },
+    {
+      "name": "Battelle Memorial Institute",
+      "type": "HostingInstitution"
+    }
+  ],
+  "references": [
+    "Hagen, C.J. & SanClements, M.D. (2026). A continental-scale synthesis of phospholipid fatty acid data from the National Ecological Observatory Network. Scientific Data (in review).",
+    "National Ecological Observatory Network. Soil microbe biomass (DP1.10104.001). https://data.neonscience.org/data-products/DP1.10104.001"
+  ],
+  "version": "1.0.0",
+  "language": "eng",
+  "communities": [
+    {
+      "identifier": "neon"
+    }
+  ]
+}

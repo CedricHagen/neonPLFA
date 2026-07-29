@@ -1,0 +1,25 @@
+Table S1. Statistical validation of spatial and temporal patterns in NEON PLFA data,,,,,,
+,,,,,,
+Section,Analysis,Metric,n,Statistic,Value,P-value
+Latitudinal gradients,Site-level latitude relationship,log10(Biomass),47,R²,0.256,2.86E-04
+Latitudinal gradients,Site-level latitude relationship,F:B Ratio,47,R²,0.284,1.17E-04
+Latitudinal gradients,Site-level latitude relationship,Cyclopropyl:precursor stress index,47,R²,0.329,2.47E-05
+Horizon comparisons,Organic vs. Mineral horizons,Biomass (nmol/g),Organic: 2345 / Mineral: 9054,Mean O / Mean M,988.96 / 127.51,
+Horizon comparisons,Organic vs. Mineral horizons,Biomass fold-difference,11399,Fold change,7.75,
+Horizon comparisons,Organic vs. Mineral horizons,F:B Ratio,Organic: 2345 / Mineral: 9054,Mean O / Mean M,0.208 / 0.075,
+Horizon comparisons,Organic vs. Mineral horizons,F:B fold-difference,11399,Fold change,2.77,
+Horizon comparisons,Organic vs. Mineral horizons,GP:GN Ratio,Organic: 2345 / Mineral: 9054,Mean O / Mean M,1.50 / 2.51,
+Horizon comparisons,Organic vs. Mineral horizons,Cyclopropyl:precursor stress index,Organic: 2345 / Mineral: 9054,Mean O / Mean M,1.11 / 1.38,
+Temporal stability,Intraclass correlation,Biomass ICC,11399,ICC,0.675,<0.001
+Temporal stability,Intraclass correlation,F:B Ratio ICC,11399,ICC,0.786,<0.001
+Temporal stability,Intraclass correlation,GP:GN Ratio ICC,11152,ICC,0.418,<0.001
+Temporal stability,Intraclass correlation,Cyclopropyl:precursor stress index ICC,11144,ICC,0.488,<0.001
+Temporal variability,Coefficient of variation,Biomass,20 sites (5+ years),Median CV / Mean CV,22.8% / 31.8%,
+Temporal variability,Coefficient of variation,F:B Ratio,20 sites (5+ years),Median CV / Mean CV,34.1% / 37.9%,
+Temporal variability,Coefficient of variation,GP:GN Ratio,20 sites (5+ years),Median CV / Mean CV,40.1% / 48.5%,
+Temporal variability,Coefficient of variation,Cyclopropyl:precursor stress index,20 sites (5+ years),Median CV / Mean CV,38.2% / 43.0%,
+Internal consistency,Metric relationships (Figure 6),F:B vs log10(Biomass),11399,R²,0.132,<0.001
+Internal consistency,Metric relationships (Figure 6),log10(Fungal) vs log10(Bacterial),11399,R²,0.558,<0.001
+Internal consistency,Metric relationships (Figure 6),Stress index vs F:B ratio,11144,R²,0.008,<0.001
+,,,,,,
+Note: ICC = Intraclass correlation coefficient. CV = Coefficient of variation. O = Organic horizon. M = Mineral horizon. All p-values <0.001 unless otherwise noted. Latitudinal gradients based on site-level means (n=47 sites). Horizon comparisons show mean values and sample sizes. Temporal stability metrics calculated for sites with 5+ years of data. Internal consistency metrics represent bivariate relationships among derived microbial community properties.,,,,,,

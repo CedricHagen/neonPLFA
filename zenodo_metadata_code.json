@@ -1,0 +1,70 @@
+{
+  "upload_type": "software",
+  "publication_date": "2026-06-01",
+  "title": "neonPLFA: R workflow for processing NEON PLFA data (v1.0.0)",
+  "creators": [
+    {
+      "name": "Hagen, Cedric J.",
+      "affiliation": "Department of Geological Sciences, University of Colorado Boulder; National Ecological Observatory Network, Battelle Memorial Institute",
+      "orcid": "0000-0001-6722-3098"
+    },
+    {
+      "name": "SanClements, Michael D.",
+      "affiliation": "Institute of Arctic and Alpine Research, University of Colorado Boulder; National Ecological Observatory Network, Battelle Memorial Institute",
+      "orcid": "0000-0002-1962-3561"
+    }
+  ],
+  "description": "<p>An open-source R workflow and interactive Shiny application for accessing, processing, and analyzing soil microbial community data from the National Ecological Observatory Network (NEON).</p><p><strong>Features:</strong></p><ul><li>Automated download and harmonization of NEON PLFA data (DP1.10104.001) and soil chemistry data (DP1.10086.001)</li><li>Standardized quality control procedures and contamination correction (C18:0)</li><li>Calculation of microbial community metrics: total biomass, fungal:bacterial ratios, stress indices</li><li>Interactive Shiny application for data exploration and visualization</li><li>Reproducible workflows with comprehensive documentation</li></ul><p><strong>Components:</strong></p><ul><li>R scripts for data acquisition and processing</li><li>Interactive Shiny application (NEON PLFA Explorer)</li><li>Functions for calculating standardized microbial community metrics</li><li>Complete documentation and user guide</li></ul><p><strong>Requirements:</strong></p><ul><li>R version ≥ 4.0.0</li><li>R packages: neonUtilities, dplyr, tidyr, ggplot2, shiny, DT, leaflet, broom</li></ul><p>This workflow was used to generate the continental-scale NEON PLFA synthesis dataset (11,399 samples from 47 sites, 2017-2024).</p>",
+  "access_right": "open",
+  "license": "mit-license",
+  "keywords": [
+    "NEON",
+    "PLFA",
+    "phospholipid fatty acids",
+    "soil microbial communities",
+    "R",
+    "Shiny",
+    "data processing",
+    "workflow",
+    "microbial ecology",
+    "soil health",
+    "biogeography"
+  ],
+  "notes": "This software accompanies the manuscript 'A continental-scale synthesis of phospholipid fatty acid data from the National Ecological Observatory Network' and was used to generate the associated dataset. The workflow is designed to be extensible and can be used to update the dataset as new NEON data become available.",
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "10.XXXX/journal.XXXXX",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "relation": "compiles",
+      "identifier": "10.5281/zenodo.20299460",
+      "resource_type": "dataset",
+      "scheme": "doi"
+    },
+    {
+      "relation": "isIdenticalTo",
+      "identifier": "https://github.com/CedricHagen/neonPLFA",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "National Ecological Observatory Network (NEON)",
+      "type": "DataCollector"
+    }
+  ],
+  "references": [
+    "Hagen, C.J. & SanClements, M.D. (2026). A continental-scale synthesis of phospholipid fatty acid data from the National Ecological Observatory Network. Scientific Data (in review)."
+  ],
+  "version": "1.0.0",
+  "language": "eng",
+  "communities": [
+    {
+      "identifier": "neon"
+    }
+  ]
+}

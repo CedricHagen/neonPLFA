@@ -1,4 +1,4 @@
-# neonSoilHealth
+# neonPLFA
 
 **Continental-scale synthesis of NEON phospholipid fatty acid (PLFA) data**
 
@@ -13,13 +13,13 @@ This repository provides an open-source R workflow and interactive Shiny applica
 
 - **Automated data acquisition**: Download and harmonize NEON PLFA data (DP1.10104.001) and soil chemistry data (DP1.10086.001)
 - **Quality control**: Apply standardized QC procedures and correct for known contaminants (C18:0)
-- **Microbial community metrics**: Calculate total biomass, fungal:bacterial ratios, stress indices, and more
+- **Microbial community metrics**: Calculate total biomass, fungal:bacterial ratios, Gram-positive:Gram-negative ratios, cyclopropyl:precursor stress indices, and more
 - **Interactive visualization**: Explore temporal trends, spatial patterns, and environmental drivers through a Shiny app
 - **Reproducible workflows**: Fully documented code with transparent processing steps
 
 ## Data Access
 
-The processed dataset (11,399 samples × 127 variables) is available on Zenodo:
+The processed dataset (11,399 samples × 129 variables) is available on Zenodo:
 
 **Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.20299460](https://doi.org/10.5281/zenodo.20299460)
 
@@ -53,21 +53,21 @@ install.packages(c(
 
 ```bash
 # Clone this repository
-git clone https://github.com/CedricHagen/neonSoilHealth.git
-cd neonSoilHealth
+git clone https://github.com/CedricHagen/neonPLFA.git
+cd neonPLFA
 ```
 
-Or download as ZIP from the [GitHub repository](https://github.com/CedricHagen/neonSoilHealth).
+Or download as ZIP from the [GitHub repository](https://github.com/CedricHagen/neonPLFA).
 
 ## Quick Start
 
 ### Option 1: Interactive Shiny Application
 
-Launch the NEON Soil Health Explorer app to interactively download, process, and visualize data:
+Launch the NEON PLFA Explorer app to interactively download, process, and visualize data:
 
 ```r
 # Set working directory to the repository
-setwd("path/to/neonSoilHealth")
+setwd("path/to/neonPLFA")
 
 # Launch the Shiny app
 shiny::runApp("R")
@@ -86,11 +86,11 @@ Use the processing functions directly:
 
 ```r
 # Load functions
-source("R/plfa_soil_health_functions.R")
-source("R/plfa_soil_health.R")
+source("R/neon_plfa_functions.R")
+source("R/neon_plfa.R")
 
 # Download and process PLFA data for specific sites
-# See R/run_plfa_soil_health_functions.R for examples
+# See R/run_neon_plfa_functions.R for examples
 ```
 
 ### Option 3: Use Pre-processed Data
@@ -99,7 +99,7 @@ Download the processed dataset directly from Zenodo and analyze in your preferre
 
 ```r
 # Read the processed dataset
-plfa_data <- read.csv("neon_plfa_synthesis_v1.0.csv")
+plfa_data <- read.csv("neon_plfa_synthesis_v1.1.csv")
 
 # Explore the data
 head(plfa_data)
@@ -118,40 +118,60 @@ This workflow integrates the following NEON data products:
 
 The workflow calculates six key microbial community metrics:
 
-1. **Total microbial biomass** (nmol/g dry soil): Sum of all 41 PLFA biomarkers
-2. **Fungal PLFA** (nmol/g): Fungal biomarkers (18:2ω6,9 + 18:1ω9c)
-3. **Bacterial PLFA** (nmol/g): Sum of 14 bacterial biomarkers
+1. **Total microbial biomass** (nmol/g dry soil): Total scaled lipid concentration, C18:0-corrected
+2. **Fungal PLFA** (nmol/g): Fungal biomarker (18:2ω6,9)
+3. **Bacterial PLFA** (nmol/g): Sum of 12 bacterial biomarkers
 4. **Fungal:bacterial (F:B) ratio**: Relative dominance of fungal vs. bacterial decomposers
-5. **Stress index**: Cyclopropyl:precursor ratio indicating physiological stress
-6. **Gram-positive:Gram-negative ratio**: Relative abundance of bacterial groups
+5. **Gram-positive:Gram-negative ratio**: Relative abundance of bacterial groups
+6. **Cyclopropyl:precursor stress index**: Ratio of cyclopropyl fatty acids to their monoenoic precursors (primary: cy19:0/18:1ω7c), a physiological-stress indicator
 
-See the [data dictionary](manuscript_outputs/tables/data_dictionary.csv) for complete variable descriptions.
+See the [data dictionary](tables/TableS2_data_dictionary.csv) for complete variable descriptions.
 
 ## Repository Structure
 
+The repository root is the public code + dataset release (Shiny app, processed
+data, release tables/figures). Each manuscript built on this dataset lives under
+`projects/`, and every project keeps its submission-ready deliverables in a
+`manuscript/` subfolder.
+
 ```
-neonSoilHealth/
+neonPLFA/
 ├── README.md                          # This file
 ├── LICENSE                            # MIT License
 ├── CITATION.cff                       # Citation metadata
+├── zenodo_metadata_dataset.json       # Dataset release metadata
+├── zenodo_metadata_code.json          # Code release metadata
 ├── R/
-│   ├── app.R                         # Shiny application
-│   ├── plfa_soil_health.R            # Core functions for data download
-│   ├── plfa_soil_health_functions.R  # PLFA metric calculations
-│   └── run_plfa_soil_health_functions.R  # Example usage
-├── manuscript_outputs/
-│   ├── data/
-│   │   └── neon_plfa_synthesis_v1.0.csv  # Processed dataset
-│   ├── figures/                      # Manuscript figures
-│   ├── tables/                       # Summary statistics & data dictionary
-│   └── generate_manuscript_outputs_v1.0.R  # Reproduce manuscript outputs
-└── NEON SOIL HEALTH EXPLORER USER GUIDE.docx  # Detailed user guide
+│   ├── app.R                          # Shiny application
+│   ├── neon_plfa.R                    # Core functions for data download
+│   ├── neon_plfa_functions.R          # PLFA metric calculations
+│   └── run_neon_plfa_functions.R      # Example usage
+├── data/
+│   └── neon_plfa_synthesis_v1.1.csv   # Processed dataset (129 variables)
+├── tables/                            # Release tables (incl. TableS2_data_dictionary.csv)
+├── figures/                           # Release figures (Figure1–6)
+├── docs/
+│   └── USER_GUIDE.md                  # Shiny app user guide
+├── projects/                          # Manuscripts built on this dataset
+│   ├── descriptor/                    # Scientific Data descriptor (this dataset)
+│   │   └── manuscript/                #   docx + supplement + tables/ + figures/ + data/
+│   │                                  #   + generate_manuscript_outputs_v1.0.R
+│   ├── mane/                          # MANE continental test (New Phytologist)
+│   │   ├── manuscript/                #   PLFA_MANE_MS.docx + supplement + figures/
+│   │   └── 0X_*.R, output/            #   analysis pipeline
+│   ├── climate/                       # Climate-regime × microbial (GCB)
+│   │   ├── manuscript/                #   PLFA_climate_MS.docx + supplement + figures/
+│   │   └── 0X_*.R, output/            #   analysis pipeline
+│   └── flux/                          # Microbial → soil respiration (Project D; in progress)
+│       ├── manuscript/                #   (placeholder — no draft yet)
+│       └── 0X_*.R, output/            #   analysis pipeline
+└── archive/                           # Superseded data & older drafts
 ```
 
 ## Documentation
 
-- **Shiny App User Guide**: See `NEON SOIL HEALTH EXPLORER USER GUIDE.docx` for detailed instructions
-- **Data Dictionary**: `manuscript_outputs/tables/data_dictionary.csv` describes all 127 variables
+- **Shiny App User Guide**: See `docs/USER_GUIDE.md` for detailed instructions
+- **Data Dictionary**: `tables/TableS2_data_dictionary.csv` describes all 129 variables
 - **Manuscript**: Full methods and validation are described in the associated Scientific Data publication
 
 ## Citation
@@ -164,7 +184,7 @@ If you use this dataset or code, please cite:
 Hagen, C.J. & SanClements, M.D. (2026). Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. https://doi.org/10.5281/zenodo.20299460
 
 **Code:**  
-Hagen, C.J. & SanClements, M.D. (2026). neonSoilHealth: R workflow for processing NEON PLFA data (v1.0.0). *Zenodo*. https://doi.org/10.5281/zenodo.YYYYYYY
+Hagen, C.J. & SanClements, M.D. (2026). neonPLFA: R workflow for processing NEON PLFA data (v1.0.0). *Zenodo*. https://doi.org/10.5281/zenodo.YYYYYYY
 
 BibTeX:
 ```bibtex
@@ -188,14 +208,14 @@ BibTeX:
 ## Contributing
 
 We welcome contributions! Please:
-- Report bugs or request features via [GitHub Issues](https://github.com/CedricHagen/neonSoilHealth/issues)
+- Report bugs or request features via [GitHub Issues](https://github.com/CedricHagen/neonPLFA/issues)
 - Submit improvements via pull requests
 - Follow existing code style and documentation practices
 
 ## Support
 
 For questions or issues:
-- Open an [issue](https://github.com/CedricHagen/neonSoilHealth/issues) on GitHub
+- Open an [issue](https://github.com/CedricHagen/neonPLFA/issues) on GitHub
 - Contact: Cedric J. Hagen (cedric.hagen@colorado.edu)
 
 ## Acknowledgments

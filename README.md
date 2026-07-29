@@ -2,7 +2,7 @@
 
 **Continental-scale synthesis of NEON phospholipid fatty acid (PLFA) data**
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20299460.svg)](https://doi.org/10.5281/zenodo.20299460)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20299460.svg)](https://doi.org/10.5281/zenodo.21463376)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -99,7 +99,7 @@ Download the processed dataset directly from Zenodo and analyze in your preferre
 
 ```r
 # Read the processed dataset
-plfa_data <- read.csv("neon_plfa_synthesis_v1.1.csv")
+plfa_data <- read.csv("neon_plfa_synthesis_v1.2.csv")
 
 # Explore the data
 head(plfa_data)
@@ -147,7 +147,7 @@ neonPLFA/
 │   ├── neon_plfa_functions.R          # PLFA metric calculations
 │   └── run_neon_plfa_functions.R      # Example usage
 ├── data/
-│   └── neon_plfa_synthesis_v1.1.csv   # Processed dataset (129 variables)
+│   └── neon_plfa_synthesis_v1.2.csv   # Processed dataset (129 variables)
 ├── tables/                            # Release tables (incl. TableS2_data_dictionary.csv)
 ├── figures/                           # Release figures (Figure1–6)
 ├── docs/

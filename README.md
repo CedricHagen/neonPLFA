@@ -2,7 +2,7 @@
 
 **Continental-scale synthesis of NEON phospholipid fatty acid (PLFA) data**
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20299460.svg)](https://doi.org/10.5281/zenodo.21463376)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21463376.svg)](https://doi.org/10.5281/zenodo.21463376)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -21,7 +21,7 @@ This repository provides an open-source R workflow and interactive Shiny applica
 
 The processed dataset (11,399 samples × 129 variables) is available on Zenodo:
 
-**Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.20299460](https://doi.org/10.5281/zenodo.21463376)
+**Hagen, C.J. & SanClements, M.D. (2026).** Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. [https://doi.org/10.5281/zenodo.21463376](https://doi.org/10.5281/zenodo.21463376)
 
 ## Installation
 

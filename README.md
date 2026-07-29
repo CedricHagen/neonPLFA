@@ -181,7 +181,7 @@ If you use this dataset or code, please cite:
 **Hagen, C.J. & SanClements, M.D. (2026).** A continental-scale synthesis of phospholipid fatty acid data from the National Ecological Observatory Network. *Scientific Data* (in review).
 
 **Data:**  
-Hagen, C.J. & SanClements, M.D. (2026). Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. https://doi.org/10.5281/zenodo.20299460
+Hagen, C.J. & SanClements, M.D. (2026). Continental-scale synthesis of NEON phospholipid fatty acid data (2017-2024). *Zenodo*. https://doi.org/10.5281/zenodo.21463376
 
 **Code:**  
 Hagen, C.J. & SanClements, M.D. (2026). neonPLFA: R workflow for processing NEON PLFA data (v1.0.0). *Zenodo*. https://doi.org/10.5281/zenodo.YYYYYYY
